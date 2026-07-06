@@ -1,0 +1,79 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--background-elevated-base);
+  padding: 32px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 24px;
+  color: var(--text-subdued);
+}
+
+.close-btn:hover {
+  color: var(--essential-base);
+}
+
+.modal-content h2 {
+  margin-bottom: 24px;
+  color: var(--essential-base);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-base);
+  font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--background-highlight);
+  border: 1px solid #333;
+  color: var(--essential-base);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--text-bright-accent);
+  color: #000;
+  font-weight: bold;
+  border-radius: 20px;
+  margin-top: 16px;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  background-color: #33ff77;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
