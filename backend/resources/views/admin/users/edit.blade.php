@@ -164,6 +164,7 @@
             <h3>Account</h3>
             <a onclick="showTab('personalInfoTab', this)" class="sidebar-item active"><i class="fas fa-pencil-alt"></i> Edit personal info</a>
             <a onclick="showTab('playlistsTab', this)" class="sidebar-item"><i class="fas fa-music"></i> Manage Playlists</a>
+            <a onclick="showTab('socialTab', this)" class="sidebar-item"><i class="fas fa-users"></i> Social Connections</a>
         </div>
         <div class="sidebar-section">
             <h3>Subscription</h3>
@@ -293,12 +294,58 @@
             <div style="color: #b3b3b3; font-style: italic;">This user has not created any playlists yet.</div>
         @endforelse
     </div>
+
+    <div class="main-content" id="socialTab" style="display: none;">
+        <h1>Social Connections</h1>
+        <p style="color: #b3b3b3; margin-bottom: 30px;">Manage followers and following for {{ $user->name }}</p>
+
+        <div style="display: flex; gap: 40px;">
+            <div style="flex: 1;">
+                <h2 style="font-size: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Following <span style="color: #b3b3b3; font-size: 14px; font-weight: normal;">({{ $user->following->count() }})</span></h2>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    @forelse($user->following as $followed)
+                        <li style="padding: 10px 0; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #282828; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($followed->name) }}&background=random&size=32" style="width:100%;">
+                                </div>
+                                <span>{{ $followed->name }}</span>
+                            </div>
+                            <span style="font-size: 12px; padding: 4px 10px; border-radius: 10px; background: {{ $followed->pivot->status === 'accepted' ? '#1db954' : '#333' }}; color: {{ $followed->pivot->status === 'accepted' ? '#000' : '#fff' }};">{{ ucfirst($followed->pivot->status) }}</span>
+                        </li>
+                    @empty
+                        <li style="color: #b3b3b3; font-style: italic;">Not following anyone.</li>
+                    @endforelse
+                </ul>
+            </div>
+
+            <div style="flex: 1;">
+                <h2 style="font-size: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Followers <span style="color: #b3b3b3; font-size: 14px; font-weight: normal;">({{ $user->followers->count() }})</span></h2>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    @forelse($user->followers as $follower)
+                        <li style="padding: 10px 0; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: #282828; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($follower->name) }}&background=random&size=32" style="width:100%;">
+                                </div>
+                                <span>{{ $follower->name }}</span>
+                            </div>
+                            <span style="font-size: 12px; padding: 4px 10px; border-radius: 10px; background: {{ $follower->pivot->status === 'accepted' ? '#1db954' : '#333' }}; color: {{ $follower->pivot->status === 'accepted' ? '#000' : '#fff' }};">{{ ucfirst($follower->pivot->status) }}</span>
+                        </li>
+                    @empty
+                        <li style="color: #b3b3b3; font-style: italic;">No followers.</li>
+                    @endforelse
+                </ul>
+            </div>
+        </div>
+    </div>
   </div>
 
   <script>
     function showTab(tabId, element) {
         document.getElementById('personalInfoTab').style.display = 'none';
         document.getElementById('playlistsTab').style.display = 'none';
+        document.getElementById('socialTab').style.display = 'none';
         document.getElementById(tabId).style.display = 'block';
         
         document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));

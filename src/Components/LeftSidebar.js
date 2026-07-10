@@ -3,11 +3,10 @@ import './LeftSidebar.css';
 import { BiLibrary } from 'react-icons/bi';
 import { FiPlus, FiSearch, FiMusic, FiSliders, FiFolder, FiUsers } from 'react-icons/fi';
 
-export const LeftSidebar = ({ playlists, songs, onCreatePlaylist, onSelectPlaylist, onSelectArtist, onDeletePlaylist }) => {
+export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, onCreatePlaylist, onSelectPlaylist, onSelectArtist, onDeletePlaylist }) => {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [playlistToDelete, setPlaylistToDelete] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('Playlists');
 
   // Compute unique artists from songs
   const artists = songs ? [...new Set(songs.map(s => s.artist))] : [];
@@ -104,6 +103,7 @@ export const LeftSidebar = ({ playlists, songs, onCreatePlaylist, onSelectPlayli
       <div className="library-filters">
         <button className={`filter-chip ${activeFilter === 'Playlists' ? 'active' : ''}`} onClick={() => setActiveFilter('Playlists')}>Playlists</button>
         <button className={`filter-chip ${activeFilter === 'Artists' ? 'active' : ''}`} onClick={() => setActiveFilter('Artists')}>Artists</button>
+        <button className={`filter-chip ${activeFilter === 'Friends' ? 'active' : ''}`} onClick={() => setActiveFilter('Friends')}>Friends</button>
       </div>
       
       <div className="library-search-row">

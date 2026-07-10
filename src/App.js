@@ -4,6 +4,7 @@ import './App.css';
 import { TopBar } from './Components/TopBar';
 import { LeftSidebar } from './Components/LeftSidebar';
 import { MainContainer } from './Components/MainContainer';
+import { RightSidebar } from './Components/RightSidebar';
 import { Playbar } from './Components/Playbar';
 import { UploadModal } from './Components/UploadModal';
 import { Login } from './Components/Login';
@@ -12,6 +13,7 @@ import { Register } from './Components/Register';
 function SpotifyApp() {
   const location = useLocation();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('Playlists');
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('spotify_user')));
 
   useEffect(() => {
@@ -25,6 +27,19 @@ function SpotifyApp() {
       window.history.replaceState({}, document.title, "/");
     }
   }, [location]);
+
+  // Ping backend to mark user as online when app loads
+  useEffect(() => {
+    if (user && user.email) {
+      fetch('http://localhost:8000/api/ping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      }).catch(err => console.error("Ping failed", err));
+    }
+  }, [user]);
+
+
   const [refreshCount, setRefreshCount] = useState(0);
   const [songs, setSongs] = useState([]);
   const [currentSong, setCurrentSong] = useState(null);
@@ -32,6 +47,20 @@ function SpotifyApp() {
   const [playlists, setPlaylists] = useState([]);
   const [activePlaylist, setActivePlaylist] = useState(null);
   const [activeArtist, setActiveArtist] = useState(null);
+
+  // Update current song in DB when it changes (globally tracked)
+  useEffect(() => {
+    if (user && user.email) {
+      fetch('http://localhost:8000/api/social/current-song', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: user.email, 
+          song_id: isPlaying && currentSong ? currentSong.id : null 
+        })
+      }).catch(err => console.error("Sync song failed", err));
+    }
+  }, [currentSong, isPlaying, user]);
 
   const handleUploadSuccess = () => {
     setRefreshCount(prev => prev + 1);
@@ -129,11 +158,13 @@ function SpotifyApp() {
   };
 
   return (
-    <div className="App">
+    <div className={`App ${activeFilter === 'Friends' ? 'with-right-sidebar' : ''}`}>
       <TopBar onOpenUpload={() => setIsUploadOpen(true)} user={user} />
       <LeftSidebar 
         playlists={playlists} 
         songs={songs}
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
         onCreatePlaylist={handleCreatePlaylist} 
         onSelectPlaylist={(p) => { setActivePlaylist(p); setActiveArtist(null); }} 
         onSelectArtist={(a) => { setActiveArtist(a); setActivePlaylist(null); }}
@@ -149,6 +180,7 @@ function SpotifyApp() {
         activeArtist={activeArtist}
         onUpdatePlaylist={handleUpdatePlaylist}
       />
+      {activeFilter === 'Friends' && <RightSidebar user={user} currentSong={currentSong} />}
       <Playbar 
         currentSong={currentSong} 
         isPlaying={isPlaying} 

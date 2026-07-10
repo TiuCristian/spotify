@@ -52,4 +52,23 @@ class User extends Authenticatable
     {
         return $this->hasMany(Playlist::class);
     }
+
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'followed_id')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'follows', 'followed_id', 'follower_id')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
+
+    public function currentSong()
+    {
+        return $this->belongsTo(Song::class, 'current_song_id');
+    }
 }

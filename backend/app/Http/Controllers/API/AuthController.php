@@ -58,4 +58,35 @@ class AuthController extends Controller
         Auth::logout();
         return response()->json(['message' => 'Logged out']);
     }
+
+    public function ping(Request $request)
+    {
+        $email = $request->input('email');
+        if ($email) {
+            $user = User::where('email', $email)->first();
+            if ($user) {
+                $user->is_online = true;
+                $user->save();
+                return response()->json(['status' => 'ok']);
+            }
+        }
+        return response()->json(['status' => 'not found'], 404);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $email = $request->input('email');
+        $user = User::where('email', $email)->first();
+        if (!$user) return response()->json(['error' => 'User not found'], 404);
+
+        if ($request->has('name') && $request->input('name')) {
+            $user->name = $request->input('name');
+        }
+        if ($request->has('password') && strlen($request->input('password')) >= 8) {
+            $user->password = Hash::make($request->input('password'));
+        }
+        $user->save();
+
+        return response()->json(['success' => true, 'user' => clone $user]);
+    }
 }
