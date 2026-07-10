@@ -1,0 +1,161 @@
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #121212;
+  color: #ffffff;
+  font-family: inherit;
+  padding: 32px 0;
+}
+
+.auth-content {
+  width: 100%;
+  max-width: 450px;
+  background-color: #121212;
+  padding: 32px;
+  border-radius: 8px;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-logo {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.auth-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-group input {
+  background-color: transparent;
+  border: 1px solid #727272;
+  border-radius: 4px;
+  color: #fff;
+  padding: 14px;
+  font-size: 16px;
+  transition: border-color 0.1s ease;
+}
+
+.form-group input:hover, .form-group input:focus {
+  border-color: #fff;
+  outline: none;
+}
+
+.auth-submit-btn {
+  background-color: #1ed760;
+  color: #000;
+  border: none;
+  border-radius: 500px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.auth-submit-btn:hover {
+  background-color: #1fdf64;
+  transform: scale(1.04);
+}
+
+.auth-submit-btn:active {
+  transform: scale(1);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #292929;
+}
+
+.auth-divider span {
+  padding: 0 16px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #727272;
+  border-radius: 500px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.1s ease;
+}
+
+.social-btn:hover {
+  border-color: #fff;
+}
+
+.social-icon {
+  position: absolute;
+  left: 24px;
+  font-size: 20px;
+}
+
+.google-btn .social-icon {
+  color: #4285F4;
+}
+
+.apple-btn .social-icon {
+  color: #fff;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 14px;
+  color: #a7a7a7;
+}
+
+.auth-footer a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+  color: #1ed760;
+}

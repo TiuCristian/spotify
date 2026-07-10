@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './MainContainer.css';
-import { FiShuffle, FiUserPlus, FiEdit2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
+import { FiShuffle, FiUserPlus, FiEdit2, FiPlus, FiSearch, FiX, FiCheck } from 'react-icons/fi';
 
-export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying, activePlaylist, onUpdatePlaylist }) => {
-  const [songs, setSongs] = useState([]);
+export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, isPlaying, activePlaylist, activeArtist, onUpdatePlaylist }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-
-  useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/songs')
-      .then(res => res.json())
-      .then(data => {
-        setSongs(data);
-      })
-      .catch(err => console.error("Failed to fetch songs", err));
-  }, [refreshCount]);
 
   const openEditModal = () => {
     setEditName(activePlaylist.name);
@@ -72,9 +62,20 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
   );
 
   const renderPlaylistView = () => {
-    // For now, if the playlist is named "My Playlist #...", it acts like an empty new playlist.
-    const isEmpty = activePlaylist.name.startsWith('My Playlist');
-    const playlistSongs = isEmpty ? [] : songs;
+    // Only the 'Work' playlist (or playlists with real backend songs) should display songs by default
+    const playlistSongs = activePlaylist.name.toLowerCase() === 'work' ? songs : (activePlaylist.songs || []);
+    const isEmpty = playlistSongs.length === 0;
+    
+    // Calculate realistic duration based on standard 2:21 song length for the mockup
+    const totalSeconds = playlistSongs.length * 141; 
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    let durationString = '';
+    if (hours > 0) durationString += `${hours} hr `;
+    if (minutes > 0) durationString += `${minutes} min `;
+    if (hours === 0 && seconds > 0) durationString += `${seconds} sec`;
+    durationString = durationString.trim();
 
     return (
       <div className="playlist-detail-view">
@@ -82,7 +83,7 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
            <div className="playlist-cover">
               {activePlaylist.name === 'Liked Songs' ? (
                 <img src="https://misc.scdn.co/liked-songs/liked-songs-300.png" alt="Liked" />
-              ) : activePlaylist.name === 'Work' ? (
+              ) : activePlaylist.name.toLowerCase() === 'work' ? (
                 <div className="work-playlist-cover">
                    <div style={{backgroundColor: '#b00b69'}}></div>
                    <div style={{backgroundColor: '#1f1f1f'}}></div>
@@ -100,7 +101,7 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
               <h1 className="playlist-title" onClick={openEditModal} style={{cursor: 'pointer'}}>{activePlaylist.name}</h1>
               <div className="playlist-meta">
                  <div className="creator-avatar"></div>
-                 <strong>{activePlaylist.creator}</strong> {isEmpty ? '' : `• 1 save • ${playlistSongs.length} songs, 92 hr 58 min`}
+                 <strong>{activePlaylist.creator}</strong> {isEmpty ? '' : `• 1 save • ${playlistSongs.length} song${playlistSongs.length === 1 ? '' : 's'}, ${durationString}`}
               </div>
            </div>
         </div>
@@ -108,7 +109,11 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
         <div className="playlist-action-bar">
            {!isEmpty && (
              <button className="big-play-btn" onClick={() => playlistSongs.length > 0 && onPlaySong(playlistSongs[0])}>
-                <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M7.05 3.606l13.49 7.788a.7.7 0 0 1 0 1.212L7.05 20.394A.7.7 0 0 1 6 19.788V4.212a.7.7 0 0 1 1.05-.606z"></path></svg>
+                {currentSong?.id === playlistSongs[0]?.id && isPlaying ? (
+                  <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M5.7 3a.7.7 0 0 0-.7.7v16.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V3.7a.7.7 0 0 0-.7-.7H5.7zm10 0a.7.7 0 0 0-.7.7v16.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V3.7a.7.7 0 0 0-.7-.7h-2.6z"></path></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M7.05 3.606l13.49 7.788a.7.7 0 0 1 0 1.212L7.05 20.394A.7.7 0 0 1 6 19.788V4.212a.7.7 0 0 1 1.05-.606z"></path></svg>
+                )}
              </button>
            )}
            {!isEmpty && <button className="icon-btn action-icon"><FiShuffle size={24} /></button>}
@@ -148,11 +153,13 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
                {playlistSongs.map((song, idx) => (
                   <div className="song-row" key={song.id} onDoubleClick={() => onPlaySong(song)}>
                      <div className="col-hash">
-                        <span className="row-number">{idx + 1}</span>
-                        <button className="row-play-btn" onClick={() => onPlaySong(song)}>▶</button>
+                        <span className="row-number">{currentSong?.id === song.id && isPlaying ? <div className="playing-equalizer"><span/><span/><span/></div> : idx + 1}</span>
+                        <button className="row-play-btn" onClick={(e) => { e.stopPropagation(); onPlaySong(song); }}>
+                           {currentSong?.id === song.id && isPlaying ? '⏸' : '▶'}
+                        </button>
                      </div>
                      <div className="col-title">
-                        <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : "https://misc.scdn.co/liked-songs/liked-songs-300.png"} alt="cover" />
+                        <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/64/64`} alt="cover" />
                         <div className="song-title-info">
                            <div className="song-name" style={{color: currentSong?.id === song.id ? '#1db954' : '#fff'}}>{song.title}</div>
                            <div className="song-artist">{song.artist}</div>
@@ -160,7 +167,7 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
                      </div>
                      <div className="col-album">{song.album || 'Unknown Album'}</div>
                      <div className="col-date">Apr 9, 2019</div>
-                     <div className="col-time">4:46</div>
+                     <div className="col-time">2:21</div>
                   </div>
                ))}
              </>
@@ -170,9 +177,83 @@ export const MainContainer = ({ refreshCount, onPlaySong, currentSong, isPlaying
     );
   };
 
+  const renderArtistView = () => {
+    if (!activeArtist) return null;
+    
+    // Group songs by this artist
+    const artistSongs = songs.filter(s => s.artist === activeArtist);
+    
+    // Total duration calculation
+    const totalSeconds = artistSongs.length * 141; 
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    let durationStr = '';
+    if (hours > 0) durationStr += `${hours} hr `;
+    if (minutes > 0 || hours > 0) durationStr += `${minutes} min `;
+    if (seconds > 0 || (hours === 0 && minutes === 0)) durationStr += `${seconds} sec`;
+
+    const artistCover = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeArtist)}&background=random&size=232&font-size=0.33`;
+
+    return (
+      <div className="playlist-detail-view">
+        <div className="playlist-header">
+           <div className="playlist-cover" style={{ borderRadius: '50%', overflow: 'hidden' }}>
+             <img src={artistCover} alt={activeArtist} />
+           </div>
+           <div>
+             <span className="playlist-type-label" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <FiCheck style={{background: '#3d91f4', color: '#fff', borderRadius: '50%', padding: '2px'}}/>
+                Verified Artist
+             </span>
+             <h1 className="playlist-title" style={{fontSize: '96px', marginBottom: '16px'}}>{activeArtist}</h1>
+             <div className="playlist-meta">
+                <strong>{artistSongs.length} {artistSongs.length === 1 ? 'song' : 'songs'}</strong>, {durationStr}
+             </div>
+           </div>
+        </div>
+
+        <div className="playlist-action-bar">
+           <button className="big-play-btn" onClick={() => artistSongs.length > 0 && onPlaySong(artistSongs[0])}>
+              {currentSong?.artist === activeArtist && isPlaying ? (
+                <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M5.7 3a.7.7 0 0 0-.7.7v16.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V3.7a.7.7 0 0 0-.7-.7H5.7zm10 0a.7.7 0 0 0-.7.7v16.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V3.7a.7.7 0 0 0-.7-.7h-2.6z"></path></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M7.05 3.606l13.49 7.788a.7.7 0 0 1 0 1.212L7.05 20.394A.7.7 0 0 1 6 19.788V4.212a.7.7 0 0 1 1.05-.606z"></path></svg>
+              )}
+           </button>
+           <button className="make-private-btn" style={{color: '#fff', borderColor: '#fff'}}>Follow</button>
+        </div>
+
+        <div className="playlist-songs-list">
+           <h2 style={{color: '#fff', margin: '0 16px 16px', fontSize: '24px'}}>Popular</h2>
+           {artistSongs.map((song, idx) => (
+              <div className="song-row" key={song.id} onDoubleClick={() => onPlaySong(song)}>
+                 <div className="col-hash">
+                    <span className="row-number">{currentSong?.id === song.id && isPlaying ? <div className="playing-equalizer"><span/><span/><span/></div> : idx + 1}</span>
+                    <button className="row-play-btn" onClick={(e) => { e.stopPropagation(); onPlaySong(song); }}>
+                       {currentSong?.id === song.id && isPlaying ? '⏸' : '▶'}
+                    </button>
+                 </div>
+                 <div className="col-title">
+                    <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/64/64`} alt="cover" />
+                    <div className="song-title-info">
+                       <span className="song-name" style={{ color: currentSong?.id === song.id ? '#1db954' : 'var(--essential-base)' }}>{song.title}</span>
+                    </div>
+                 </div>
+                 <div className="col-album">{song.album || 'Unknown Album'}</div>
+                 <div className="col-date">Apr 9, 2019</div>
+                 <div className="col-time">2:21</div>
+              </div>
+           ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="main-container panel">
-      {activePlaylist ? renderPlaylistView() : renderHomeView()}
+      {activeArtist ? renderArtistView() : activePlaylist ? renderPlaylistView() : renderHomeView()}
 
       {isEditModalOpen && (
         <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>

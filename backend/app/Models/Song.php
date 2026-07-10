@@ -14,4 +14,9 @@ class Song extends Model
         'audio_file_path',
         'duration',
     ];
+
+    public function playlists()
+    {
+        return $this->belongsToMany(Playlist::class);
+    }
 }

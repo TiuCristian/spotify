@@ -226,10 +226,16 @@
 }
 
 .dropdown-icon {
-  font-size: 20px;
-  width: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #3e3e3e;
   display: flex;
   justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  color: #b3b3b3;
+  flex-shrink: 0;
 }
 
 .dropdown-text {
