@@ -13,6 +13,7 @@ import { Register } from './Components/Register';
 function SpotifyApp() {
   const location = useLocation();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadPlaylistId, setUploadPlaylistId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Playlists');
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('spotify_user')));
 
@@ -157,9 +158,40 @@ function SpotifyApp() {
     }
   };
 
+  const getQueue = () => {
+    if (activeArtist) return songs.filter(s => s.artist === activeArtist);
+    if (activePlaylist && activePlaylist.name.toLowerCase() === 'work') return songs;
+    if (activePlaylist && activePlaylist.songs) return activePlaylist.songs;
+    return songs;
+  };
+
+  const handleNext = (isShuffle = false) => {
+    const q = getQueue();
+    if (q.length === 0 || !currentSong) return;
+    if (isShuffle) {
+       const randomSong = q[Math.floor(Math.random() * q.length)];
+       setCurrentSong(randomSong);
+       setIsPlaying(true);
+       return;
+    }
+    const idx = q.findIndex(s => s.id === currentSong.id);
+    const nextIdx = (idx + 1) % q.length;
+    setCurrentSong(q[nextIdx]);
+    setIsPlaying(true);
+  };
+
+  const handlePrev = () => {
+    const q = getQueue();
+    if (q.length === 0 || !currentSong) return;
+    const idx = q.findIndex(s => s.id === currentSong.id);
+    const prevIdx = (idx - 1 + q.length) % q.length;
+    setCurrentSong(q[prevIdx]);
+    setIsPlaying(true);
+  };
+
   return (
     <div className={`App ${activeFilter === 'Friends' ? 'with-right-sidebar' : ''}`}>
-      <TopBar onOpenUpload={() => setIsUploadOpen(true)} user={user} />
+      <TopBar onOpenUpload={() => { setUploadPlaylistId(null); setIsUploadOpen(true); }} user={user} />
       <LeftSidebar 
         playlists={playlists} 
         songs={songs}
@@ -179,17 +211,21 @@ function SpotifyApp() {
         activePlaylist={activePlaylist}
         activeArtist={activeArtist}
         onUpdatePlaylist={handleUpdatePlaylist}
+        onOpenUpload={(pid) => { setUploadPlaylistId(pid); setIsUploadOpen(true); }}
       />
       {activeFilter === 'Friends' && <RightSidebar user={user} currentSong={currentSong} />}
       <Playbar 
         currentSong={currentSong} 
         isPlaying={isPlaying} 
-        setIsPlaying={setIsPlaying} 
+        setIsPlaying={setIsPlaying}
+        onNext={handleNext}
+        onPrev={handlePrev}
       />
       <UploadModal 
         isOpen={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)} 
         onUploadSuccess={handleUploadSuccess} 
+        playlistId={uploadPlaylistId}
       />
     </div>
   );

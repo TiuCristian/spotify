@@ -525,3 +525,62 @@
   0% { height: 3px; }
   100% { height: 14px; }
 }
+
+/* Responsive Main View */
+@media (max-width: 900px) {
+  .song-row, .songs-list-header {
+    grid-template-columns: 32px minmax(120px, 4fr) 2fr minmax(80px, 1fr);
+  }
+  .songs-list-header div:nth-child(4), .song-row div:nth-child(4) {
+    display: none; /* Hide date added */
+  }
+}
+
+@media (max-width: 768px) {
+  .playlist-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+  .playlist-cover {
+    width: 160px;
+    height: 160px;
+  }
+  .playlist-title {
+    font-size: 48px;
+    line-height: 1.2;
+  }
+  .playlist-meta {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .song-row, .songs-list-header {
+    grid-template-columns: 32px 1fr minmax(60px, 1fr);
+  }
+  .songs-list-header div:nth-child(3), .song-row div:nth-child(3) {
+    display: none; /* Hide album */
+  }
+}
+
+@media (max-width: 500px) {
+  .main-header {
+    padding: 16px 16px 0 16px;
+  }
+  .playlist-action-bar {
+    padding: 16px;
+  }
+  .playlist-songs-list {
+    padding: 0 16px 16px 16px;
+  }
+  .song-row, .songs-list-header {
+    grid-template-columns: 1fr minmax(50px, 1fr);
+    padding: 8px 0;
+  }
+  .songs-list-header div:nth-child(1), .song-row div:nth-child(1) {
+    display: none; /* Hide index */
+  }
+  .playlist-title {
+    font-size: 32px;
+  }
+}

@@ -7,6 +7,7 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [playlistToDelete, setPlaylistToDelete] = useState(null);
+  const [isResizing, setIsResizing] = useState(false);
 
   // Compute unique artists from songs
   const artists = songs ? [...new Set(songs.map(s => s.artist))] : [];
@@ -23,6 +24,26 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
   const handleContextMenu = (e, playlist) => {
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY, playlist });
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = (e) => {
+    let newWidth = e.clientX;
+    if (newWidth < 280) newWidth = 280;
+    if (newWidth > 600) newWidth = 600;
+    document.documentElement.style.setProperty('--left-sidebar-width', `${newWidth}px`);
+  };
+
+  const handleMouseUp = () => {
+    setIsResizing(false);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
   };
 
   return (
@@ -204,6 +225,10 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
           </div>
         </div>
       )}
+      <div 
+        className={`sidebar-resizer ${isResizing ? 'is-resizing' : ''}`}
+        onMouseDown={handleMouseDown}
+      />
     </div>
   );
 };

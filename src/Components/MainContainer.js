@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './MainContainer.css';
-import { FiShuffle, FiUserPlus, FiEdit2, FiPlus, FiSearch, FiX, FiCheck } from 'react-icons/fi';
+import { FiShuffle, FiUserPlus, FiEdit2, FiPlus, FiSearch, FiX, FiCheck, FiUploadCloud } from 'react-icons/fi';
 
-export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, isPlaying, activePlaylist, activeArtist, onUpdatePlaylist }) => {
+export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, isPlaying, activePlaylist, activeArtist, onUpdatePlaylist, onOpenUpload }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -66,8 +66,13 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
     const playlistSongs = activePlaylist.name.toLowerCase() === 'work' ? songs : (activePlaylist.songs || []);
     const isEmpty = playlistSongs.length === 0;
     
-    // Calculate realistic duration based on standard 2:21 song length for the mockup
-    const totalSeconds = playlistSongs.length * 141; 
+    // Calculate realistic duration dynamically based on song duration
+    const parseDuration = (d) => {
+      if (!d) return 141;
+      const p = d.split(':');
+      return p.length === 2 ? parseInt(p[0]) * 60 + parseInt(p[1]) : 141;
+    };
+    const totalSeconds = playlistSongs.reduce((acc, song) => acc + parseDuration(song.duration), 0);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -77,6 +82,17 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
     if (hours === 0 && seconds > 0) durationString += `${seconds} sec`;
     durationString = durationString.trim();
 
+    const randomCovers = [];
+    if (playlistSongs.length > 0) {
+      // Deterministic pseudo-random based on song IDs to prevent flickering
+      const pseudoRandomSongs = [...playlistSongs].sort((a, b) => ((a.id * 7) % 5) - ((b.id * 7) % 5));
+      for(let i = 0; i < 4; i++) {
+        const song = pseudoRandomSongs[i % pseudoRandomSongs.length];
+        randomCovers.push(song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/300/300`);
+      }
+    }
+    const defaultColors = ['#b00b69', '#1f1f1f', '#333', '#ff00ff'];
+
     return (
       <div className="playlist-detail-view">
         <div className="playlist-header">
@@ -85,10 +101,15 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                 <img src="https://misc.scdn.co/liked-songs/liked-songs-300.png" alt="Liked" />
               ) : activePlaylist.name.toLowerCase() === 'work' ? (
                 <div className="work-playlist-cover">
-                   <div style={{backgroundColor: '#b00b69'}}></div>
-                   <div style={{backgroundColor: '#1f1f1f'}}></div>
-                   <div style={{backgroundColor: '#333'}}></div>
-                   <div style={{backgroundColor: '#ff00ff'}}></div>
+                   {Array.from({ length: 4 }).map((_, i) => (
+                     <div 
+                       key={i}
+                       style={randomCovers[i] 
+                         ? { backgroundImage: `url(${randomCovers[i]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                         : { backgroundColor: defaultColors[i] }
+                       }
+                     ></div>
+                   ))}
                 </div>
               ) : (
                 <div className="playlist-placeholder-cover">
@@ -117,7 +138,9 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
              </button>
            )}
            {!isEmpty && <button className="icon-btn action-icon"><FiShuffle size={24} /></button>}
-           {!isEmpty && <button className="icon-btn action-icon">⬇</button>}
+           <button className="icon-btn action-icon" onClick={() => onOpenUpload && onOpenUpload(activePlaylist.id)} title="Upload to current playlist">
+             <FiUploadCloud size={24} />
+           </button>
            <button className="icon-btn action-icon"><FiUserPlus size={24} /></button>
            <button className="icon-btn action-icon">•••</button>
         </div>
@@ -167,7 +190,7 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                      </div>
                      <div className="col-album">{song.album || 'Unknown Album'}</div>
                      <div className="col-date">Apr 9, 2019</div>
-                     <div className="col-time">2:21</div>
+                     <div className="col-time">{song.duration || '2:21'}</div>
                   </div>
                ))}
              </>
@@ -184,7 +207,12 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
     const artistSongs = songs.filter(s => s.artist === activeArtist);
     
     // Total duration calculation
-    const totalSeconds = artistSongs.length * 141; 
+    const parseDuration = (d) => {
+      if (!d) return 141;
+      const p = d.split(':');
+      return p.length === 2 ? parseInt(p[0]) * 60 + parseInt(p[1]) : 141;
+    };
+    const totalSeconds = artistSongs.reduce((acc, song) => acc + parseDuration(song.duration), 0);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -243,7 +271,7 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                  </div>
                  <div className="col-album">{song.album || 'Unknown Album'}</div>
                  <div className="col-date">Apr 9, 2019</div>
-                 <div className="col-time">2:21</div>
+                 <div className="col-time">{song.duration || '2:21'}</div>
               </div>
            ))}
         </div>

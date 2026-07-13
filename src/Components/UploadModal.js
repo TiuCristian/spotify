@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import './UploadModal.css';
 
-export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
+export const UploadModal = ({ isOpen, onClose, onUploadSuccess, playlistId }) => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [audioFile, setAudioFile] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
+  const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -22,6 +23,12 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     if (coverImage) {
       formData.append('cover_image', coverImage);
     }
+    if (duration) {
+      formData.append('duration', duration);
+    }
+    if (playlistId) {
+      formData.append('playlist_id', playlistId);
+    }
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/songs', {
@@ -36,6 +43,7 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
         setArtist('');
         setAudioFile(null);
         setCoverImage(null);
+        setDuration(null);
       } else {
         console.error('Failed to upload song');
       }
@@ -62,7 +70,20 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
           </div>
           <div className="form-group">
             <label>Audio File (MP3/WAV)</label>
-            <input type="file" accept="audio/*" onChange={e => setAudioFile(e.target.files[0])} required />
+            <input type="file" accept="audio/*" onChange={e => {
+              const file = e.target.files[0];
+              setAudioFile(file);
+              if (file) {
+                const audio = new Audio(URL.createObjectURL(file));
+                audio.onloadedmetadata = () => {
+                  const minutes = Math.floor(audio.duration / 60);
+                  const seconds = Math.floor(audio.duration % 60);
+                  setDuration(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+                };
+              } else {
+                setDuration(null);
+              }
+            }} required />
           </div>
           <div className="form-group">
             <label>Cover Image (Optional)</label>

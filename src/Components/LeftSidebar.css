@@ -2,6 +2,33 @@
   grid-area: left-sidebar;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -10px;
+  width: 12px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-resizer:hover, .sidebar-resizer.is-resizing {
+  opacity: 1;
+}
+
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 5px;
+  width: 2px;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 .library-header {

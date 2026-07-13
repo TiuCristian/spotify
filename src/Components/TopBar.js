@@ -33,17 +33,11 @@ export const TopBar = ({ onOpenUpload, user }) => {
           {user ? (
             <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
               <button 
+                className="topbar-upload-btn"
                 onClick={onOpenUpload}
-                style={{
-                  background: 'transparent', color: '#b3b3b3', border: 'none',
-                  display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
-                  fontWeight: '700', fontSize: '14px', transition: 'color 0.2s, transform 0.2s'
-                }}
-                onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                onMouseOut={e => { e.currentTarget.style.color = '#b3b3b3'; e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                <FiUpload style={{fontSize: '20px'}} />
-                <span>Upload Song</span>
+                <FiUpload className="upload-icon" />
+                <span className="upload-text">Upload Song</span>
               </button>
 
               <div className="profile-menu-container">
