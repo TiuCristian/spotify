@@ -44,15 +44,12 @@ export const Register = () => {
     window.location.href = 'http://localhost:8000/auth/google/redirect';
   };
 
-  const handleFacebookAuth = () => {
-    window.location.href = 'http://localhost:8000/auth/facebook/redirect';
-  };
 
   return (
     <div className="auth-container">
       <div className="auth-content">
         <div className="auth-header">
-          <FaSpotify className="auth-logo" />
+          <img src="/stainify-logo.png" alt="Stainify Logo" style={{width: '60px', height: '60px', objectFit: 'contain', marginBottom: '10px'}} />
           <h1>Sign up to start listening</h1>
         </div>
 
@@ -78,10 +75,7 @@ export const Register = () => {
               <FaGoogle className="social-icon" />
               Sign up with Google
             </button>
-            <button type="button" className="social-btn facebook-btn" onClick={handleFacebookAuth} style={{backgroundColor: '#1877f2', color: '#fff'}}>
-              <FaFacebook className="social-icon" />
-              Sign up with Facebook
-            </button>
+
             <button type="button" className="social-btn apple-btn" onClick={() => navigate('/')}>
               <FaApple className="social-icon" />
               Sign up with Apple

@@ -15,6 +15,7 @@ function SpotifyApp() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadPlaylistId, setUploadPlaylistId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Playlists');
+  const [activeChatUser, setActiveChatUser] = useState(null);
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('spotify_user')));
 
   useEffect(() => {
@@ -68,13 +69,17 @@ function SpotifyApp() {
   };
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/songs')
-      .then(res => res.json())
-      .then(data => {
-        setSongs(data);
-      })
-      .catch(err => console.error("Failed to fetch songs", err));
-  }, [refreshCount]);
+    if (user && user.email) {
+      fetch(`http://127.0.0.1:8000/api/songs?email=${encodeURIComponent(user.email)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setSongs(data);
+        })
+        .catch(err => console.error("Failed to fetch songs", err));
+    } else {
+      setSongs([]);
+    }
+  }, [refreshCount, user]);
 
   // Fetch playlists on load
   useEffect(() => {
@@ -84,13 +89,19 @@ function SpotifyApp() {
       })
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setPlaylists(data);
+        if (Array.isArray(data)) {
+          setPlaylists(data);
+          if (activePlaylist) {
+            const updatedActive = data.find(p => p.id === activePlaylist.id);
+            if (updatedActive) setActivePlaylist(updatedActive);
+          }
+        }
       })
       .catch(console.error);
     } else {
       setPlaylists([]);
     }
-  }, [user]);
+  }, [user, refreshCount]);
 
   const handleCreatePlaylist = async () => {
     if (!user || !user.email) return;
@@ -191,7 +202,14 @@ function SpotifyApp() {
 
   return (
     <div className={`App ${activeFilter === 'Friends' ? 'with-right-sidebar' : ''}`}>
-      <TopBar onOpenUpload={() => { setUploadPlaylistId(null); setIsUploadOpen(true); }} user={user} />
+      <TopBar 
+        onOpenUpload={() => { setUploadPlaylistId(null); setIsUploadOpen(true); }} 
+        user={user} 
+        onOpenChat={(chatUser) => {
+          setActiveFilter('Friends');
+          setActiveChatUser(chatUser);
+        }}
+      />
       <LeftSidebar 
         playlists={playlists} 
         songs={songs}
@@ -212,8 +230,16 @@ function SpotifyApp() {
         activeArtist={activeArtist}
         onUpdatePlaylist={handleUpdatePlaylist}
         onOpenUpload={(pid) => { setUploadPlaylistId(pid); setIsUploadOpen(true); }}
+        onSongUpdate={() => setRefreshCount(prev => prev + 1)}
       />
-      {activeFilter === 'Friends' && <RightSidebar user={user} currentSong={currentSong} />}
+      {activeFilter === 'Friends' && (
+        <RightSidebar 
+          user={user} 
+          currentSong={currentSong} 
+          activeChatUser={activeChatUser}
+          setActiveChatUser={setActiveChatUser}
+        />
+      )}
       <Playbar 
         currentSong={currentSong} 
         isPlaying={isPlaying} 
@@ -226,6 +252,7 @@ function SpotifyApp() {
         onClose={() => setIsUploadOpen(false)} 
         onUploadSuccess={handleUploadSuccess} 
         playlistId={uploadPlaylistId}
+        user={user}
       />
     </div>
   );

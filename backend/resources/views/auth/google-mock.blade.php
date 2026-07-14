@@ -114,7 +114,7 @@
                 Sign in with Google
             </div>
             <h1>Choose an account</h1>
-            <p>to continue to React Spotify</p>
+            <p>to continue to Stainify</p>
         </div>
 
         <div class="account-list">

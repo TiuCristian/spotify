@@ -13,10 +13,16 @@ class Song extends Model
         'cover_image_path',
         'audio_file_path',
         'duration',
+        'user_id',
     ];
 
     public function playlists()
     {
         return $this->belongsToMany(Playlist::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

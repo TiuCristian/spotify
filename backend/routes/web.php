@@ -22,6 +22,8 @@ Route::prefix('admin')->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit');
+        Route::get('/users/{user}/playlists/{playlist}', [AdminUserController::class, 'showPlaylist'])->name('admin.users.playlist');
+        Route::get('/users/{user}/current-song', [AdminUserController::class, 'currentSong'])->name('admin.users.current_song');
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
     });

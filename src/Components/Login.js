@@ -40,16 +40,13 @@ export const Login = () => {
     window.location.href = 'http://localhost:8000/auth/google/redirect';
   };
 
-  const handleFacebookAuth = () => {
-    window.location.href = 'http://localhost:8000/auth/facebook/redirect';
-  };
 
   return (
     <div className="auth-container">
       <div className="auth-content">
         <div className="auth-header">
-          <FaSpotify className="auth-logo" />
-          <h1>Log in to Spotify</h1>
+          <img src="/stainify-logo.png" alt="Stainify Logo" style={{width: '60px', height: '60px', objectFit: 'contain', marginBottom: '10px'}} />
+          <h1>Log in to Stainify</h1>
         </div>
 
         <form className="auth-form" onSubmit={handleLogin}>
@@ -83,10 +80,7 @@ export const Login = () => {
             <FaGoogle className="social-icon" />
             Continue with Google
           </button>
-          <button type="button" className="social-btn facebook-btn" onClick={handleFacebookAuth} style={{backgroundColor: '#1877f2', color: '#fff'}}>
-            <FaFacebook className="social-icon" />
-            Continue with Facebook
-          </button>
+
           <button type="button" className="social-btn apple-btn" onClick={() => navigate('/')}>
             <FaApple className="social-icon" />
             Continue with Apple
@@ -94,7 +88,7 @@ export const Login = () => {
         </form>
 
         <div className="auth-footer">
-          <p>Don't have an account? <Link to="/register">Sign up for Spotify</Link></p>
+          <p>Don't have an account? <Link to="/register">Sign up for Stainify</Link></p>
         </div>
       </div>
     </div>

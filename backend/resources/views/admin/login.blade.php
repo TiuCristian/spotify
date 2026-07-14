@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Admin Login - Spotify Backend</title>
+  <title>Admin Login - Stainify Backend</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="{{ asset('admin-assets/assets/images/favicon.png') }}">
+  <link rel="icon" type="image/png" href="{{ asset('stainify-logo.png') }}">
   <link rel="stylesheet" href="{{ asset('admin-assets/assets/libs/fontawesome/css/all.min.css') }}">
   <link rel="stylesheet" href="{{ asset('admin-assets/assets/css/styles.css') }}">
 </head>

@@ -243,7 +243,7 @@
 
 .songs-list-header {
   display: grid;
-  grid-template-columns: 32px minmax(120px, 4fr) 2fr 2fr minmax(120px, 1fr);
+  grid-template-columns: 32px minmax(120px, 4fr) 2fr minmax(120px, 1fr) 40px;
   padding: 8px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   color: var(--text-subdued);
@@ -253,7 +253,7 @@
 
 .song-row {
   display: grid;
-  grid-template-columns: 32px minmax(120px, 4fr) 2fr 2fr minmax(120px, 1fr);
+  grid-template-columns: 32px minmax(120px, 4fr) 2fr minmax(120px, 1fr) 40px;
   padding: 8px 16px;
   border-radius: 4px;
   align-items: center;
@@ -264,6 +264,22 @@
 
 .song-row:hover {
   background-color: rgba(255,255,255,0.1);
+}
+
+.song-row .row-edit-btn {
+  display: none;
+  background: transparent;
+  color: var(--text-subdued);
+  border: none;
+  cursor: pointer;
+}
+
+.song-row:hover .row-edit-btn {
+  display: block;
+}
+
+.row-edit-btn:hover {
+  color: #fff;
 }
 
 .song-row:hover .row-number {
@@ -299,6 +315,20 @@
 .song-name {
   font-size: 16px;
   color: var(--essential-base);
+}
+
+.song-name-input {
+  background: rgba(255,255,255,0.1);
+  border: transparent 1px solid;
+  border-radius: 4px;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 16px;
+  width: 100%;
+}
+.song-name-input:focus {
+  outline: none;
+  border-color: #1db954;
 }
 
 .song-artist {
@@ -529,9 +559,9 @@
 /* Responsive Main View */
 @media (max-width: 900px) {
   .song-row, .songs-list-header {
-    grid-template-columns: 32px minmax(120px, 4fr) 2fr minmax(80px, 1fr);
+    grid-template-columns: 32px minmax(120px, 4fr) 2fr minmax(80px, 1fr) 40px;
   }
-  .songs-list-header div:nth-child(4), .song-row div:nth-child(4) {
+  .songs-list-header div:nth-child(3), .song-row div:nth-child(3) {
     display: none; /* Hide date added */
   }
 }
@@ -556,10 +586,7 @@
     flex-wrap: wrap;
   }
   .song-row, .songs-list-header {
-    grid-template-columns: 32px 1fr minmax(60px, 1fr);
-  }
-  .songs-list-header div:nth-child(3), .song-row div:nth-child(3) {
-    display: none; /* Hide album */
+    grid-template-columns: 32px 1fr minmax(60px, 1fr) 40px;
   }
 }
 
@@ -574,7 +601,7 @@
     padding: 0 16px 16px 16px;
   }
   .song-row, .songs-list-header {
-    grid-template-columns: 1fr minmax(50px, 1fr);
+    grid-template-columns: 1fr minmax(50px, 1fr) 40px;
     padding: 8px 0;
   }
   .songs-list-header div:nth-child(1), .song-row div:nth-child(1) {

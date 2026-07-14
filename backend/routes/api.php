@@ -10,6 +10,7 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/songs', [SongController::class, 'index']);
 Route::post('/songs', [SongController::class, 'store']);
+Route::put('/songs/{id}', [SongController::class, 'update']);
 
 Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
@@ -28,3 +29,7 @@ Route::post('/social/follow', [\App\Http\Controllers\Api\SocialController::class
 Route::post('/social/accept', [\App\Http\Controllers\Api\SocialController::class, 'acceptRequest']);
 Route::post('/social/decline', [\App\Http\Controllers\Api\SocialController::class, 'declineRequest']);
 Route::post('/social/current-song', [\App\Http\Controllers\Api\SocialController::class, 'updateCurrentSong']);
+
+Route::get('/chat/messages', [\App\Http\Controllers\Api\MessageController::class, 'index']);
+Route::post('/chat/messages', [\App\Http\Controllers\Api\MessageController::class, 'store']);
+Route::get('/chat/unread', [\App\Http\Controllers\Api\MessageController::class, 'unread']);

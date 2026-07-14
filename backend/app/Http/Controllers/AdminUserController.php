@@ -19,6 +19,35 @@ class AdminUserController extends Controller
         return view('admin.users.edit', compact('user'));
     }
 
+    public function showPlaylist(User $user, \App\Models\Playlist $playlist)
+    {
+        if ($playlist->user_id !== $user->id) {
+            abort(404);
+        }
+
+        if (strtolower($playlist->name) === 'work') {
+            $displaySongs = \App\Models\Song::paginate(10);
+        } else {
+            $displaySongs = $playlist->songs()->paginate(10);
+        }
+
+        return view('admin.users.playlist', compact('user', 'playlist', 'displaySongs'));
+    }
+
+    public function currentSong(User $user)
+    {
+        if ($user->current_song_id && $user->currentSong) {
+            $song = $user->currentSong;
+            return response()->json([
+                'is_playing' => true,
+                'title' => $song->title,
+                'artist' => $song->artist,
+                'cover_url' => $song->cover_image_path ? asset('storage/' . $song->cover_image_path) : null
+            ]);
+        }
+        return response()->json(['is_playing' => false]);
+    }
+
     public function update(Request $request, User $user)
     {
         $data = $request->validate([

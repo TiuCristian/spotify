@@ -17,7 +17,7 @@
 <body>
     <div class="card">
         <h1>facebook</h1>
-        <p>Log in to use your Facebook account with Spotify Clone.</p>
+        <p>Log in to use your Facebook account with Stainify.</p>
         <form action="{{ route('facebook.callback') }}" method="GET">
             <input type="hidden" name="simulated" value="1">
             <input type="text" name="name" placeholder="Full Name" value="Facebook User" required>

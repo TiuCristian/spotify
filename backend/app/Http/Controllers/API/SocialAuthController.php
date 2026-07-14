@@ -50,6 +50,7 @@ class SocialAuthController extends Controller
             return redirect('http://localhost:3000/?login_name=' . urlencode($user->name) . '&login_email=' . urlencode($user->email));
             
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Google Auth Failed: ' . $e->getMessage());
             return redirect('http://localhost:3000/register?error=social_auth_failed');
         }
     }
@@ -90,6 +91,7 @@ class SocialAuthController extends Controller
             return redirect('http://localhost:3000/?login_name=' . urlencode($user->name) . '&login_email=' . urlencode($user->email));
             
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Facebook Auth Failed: ' . $e->getMessage());
             return redirect('http://localhost:3000/register?error=social_auth_failed');
         }
     }

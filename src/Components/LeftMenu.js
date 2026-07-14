@@ -13,9 +13,9 @@ function LeftMenu() {
     <div className="leftMenu">
       <div className="logoContainer">
         <i>
-          <FaSpotify />
+          <img src="/stainify-logo.png" alt="Stainify Logo" style={{width: '28px', height: '28px', objectFit: 'contain'}} />
         </i>
-        <h2>Spotify</h2>
+        <h2>Stainify</h2>
         <i>
           <FaEllipsisH />
         </i>

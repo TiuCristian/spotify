@@ -128,7 +128,6 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
               <div className="title">{currentSong.title}</div>
               <div className="artist">{currentSong.artist}</div>
             </div>
-            <button className="like-btn">♡</button>
           </>
         ) : (
           <div className="now-playing-info">

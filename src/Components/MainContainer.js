@@ -2,10 +2,89 @@ import React, { useState, useEffect } from 'react';
 import './MainContainer.css';
 import { FiShuffle, FiUserPlus, FiEdit2, FiPlus, FiSearch, FiX, FiCheck, FiUploadCloud } from 'react-icons/fi';
 
-export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, isPlaying, activePlaylist, activeArtist, onUpdatePlaylist, onOpenUpload }) => {
+export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, isPlaying, activePlaylist, activeArtist, onUpdatePlaylist, onOpenUpload, onSongUpdate }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+
+  const [editingSongId, setEditingSongId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null });
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = null;
+      key = null;
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedSongs = (songsList) => {
+    if (!sortConfig.key || !sortConfig.direction) return songsList;
+    return [...songsList].sort((a, b) => {
+      if (sortConfig.key === 'title') {
+        const titleA = a.title.toLowerCase();
+        const titleB = b.title.toLowerCase();
+        if (titleA < titleB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (titleA > titleB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+      if (sortConfig.key === 'date') {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        if (dateA < dateB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (dateA > dateB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      }
+      return 0;
+    });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Apr 9, 2019';
+    const d = new Date(dateString);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const startEditingSong = (song) => {
+    setEditingSongId(song.id);
+    setEditingTitle(song.title);
+  };
+
+  const saveSongTitle = async (songId) => {
+    if (!editingTitle.trim()) {
+      setEditingSongId(null);
+      return;
+    }
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/songs/${songId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ title: editingTitle })
+      });
+      if (res.ok) {
+        if (onSongUpdate) onSongUpdate();
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    setEditingSongId(null);
+  };
+
+  const handleSongKeyDown = (e, songId) => {
+    if (e.key === 'Enter') {
+      saveSongTitle(songId);
+    } else if (e.key === 'Escape') {
+      setEditingSongId(null);
+    }
+  };
 
   const openEditModal = () => {
     setEditName(activePlaylist.name);
@@ -88,7 +167,7 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
       const pseudoRandomSongs = [...playlistSongs].sort((a, b) => ((a.id * 7) % 5) - ((b.id * 7) % 5));
       for(let i = 0; i < 4; i++) {
         const song = pseudoRandomSongs[i % pseudoRandomSongs.length];
-        randomCovers.push(song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/300/300`);
+        randomCovers.push(song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : "https://misc.scdn.co/liked-songs/liked-songs-300.png");
       }
     }
     const defaultColors = ['#b00b69', '#1f1f1f', '#333', '#ff00ff'];
@@ -168,12 +247,18 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
              <>
                <div className="songs-list-header">
                   <div className="col-hash">#</div>
-                  <div className="col-title">Title</div>
-                  <div className="col-album">Album</div>
-                  <div className="col-date">Date added</div>
+                  <div className="col-title" onClick={() => handleSort('title')} style={{cursor: 'pointer'}}>
+                     Title {sortConfig.key === 'title' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                  </div>
+                  <div className="col-date" onClick={() => handleSort('date')} style={{cursor: 'pointer'}}>
+                     Date added {sortConfig.key === 'date' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                  </div>
                   <div className="col-time">⏱</div>
+                  <div className="col-edit" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                     <FiEdit2 size={14} />
+                  </div>
                </div>
-               {playlistSongs.map((song, idx) => (
+               {getSortedSongs(playlistSongs).map((song, idx) => (
                   <div className="song-row" key={song.id} onDoubleClick={() => onPlaySong(song)}>
                      <div className="col-hash">
                         <span className="row-number">{currentSong?.id === song.id && isPlaying ? <div className="playing-equalizer"><span/><span/><span/></div> : idx + 1}</span>
@@ -182,15 +267,33 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                         </button>
                      </div>
                      <div className="col-title">
-                        <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/64/64`} alt="cover" />
-                        <div className="song-title-info">
-                           <div className="song-name" style={{color: currentSong?.id === song.id ? '#1db954' : '#fff'}}>{song.title}</div>
+                        <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : "https://misc.scdn.co/liked-songs/liked-songs-300.png"} alt="cover" />
+                        <div className="song-title-info" style={{width: '100%'}}>
+                           {editingSongId === song.id ? (
+                             <input 
+                               type="text" 
+                               className="song-name-input"
+                               value={editingTitle}
+                               onChange={e => setEditingTitle(e.target.value)}
+                               onBlur={() => saveSongTitle(song.id)}
+                               onKeyDown={e => handleSongKeyDown(e, song.id)}
+                               autoFocus
+                               onClick={e => e.stopPropagation()}
+                               onDoubleClick={e => e.stopPropagation()}
+                             />
+                           ) : (
+                             <div className="song-name" style={{color: currentSong?.id === song.id ? '#1db954' : '#fff'}}>{song.title}</div>
+                           )}
                            <div className="song-artist">{song.artist}</div>
                         </div>
                      </div>
-                     <div className="col-album">{song.album || 'Unknown Album'}</div>
-                     <div className="col-date">Apr 9, 2019</div>
+                     <div className="col-date">{formatDate(song.created_at)}</div>
                      <div className="col-time">{song.duration || '2:21'}</div>
+                     <div className="col-edit">
+                        <button className="row-edit-btn" onClick={(e) => { e.stopPropagation(); startEditingSong(song); }} title="Edit Song">
+                           <FiEdit2 size={16} />
+                        </button>
+                     </div>
                   </div>
                ))}
              </>
@@ -255,7 +358,20 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
 
         <div className="playlist-songs-list">
            <h2 style={{color: '#fff', margin: '0 16px 16px', fontSize: '24px'}}>Popular</h2>
-           {artistSongs.map((song, idx) => (
+           <div className="songs-list-header">
+              <div className="col-hash">#</div>
+              <div className="col-title" onClick={() => handleSort('title')} style={{cursor: 'pointer'}}>
+                 Title {sortConfig.key === 'title' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </div>
+              <div className="col-date" onClick={() => handleSort('date')} style={{cursor: 'pointer'}}>
+                 Date added {sortConfig.key === 'date' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+              </div>
+              <div className="col-time">⏱</div>
+              <div className="col-edit" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                 <FiEdit2 size={14} />
+              </div>
+           </div>
+           {getSortedSongs(artistSongs).map((song, idx) => (
               <div className="song-row" key={song.id} onDoubleClick={() => onPlaySong(song)}>
                  <div className="col-hash">
                     <span className="row-number">{currentSong?.id === song.id && isPlaying ? <div className="playing-equalizer"><span/><span/><span/></div> : idx + 1}</span>
@@ -264,14 +380,32 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                     </button>
                  </div>
                  <div className="col-title">
-                    <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/64/64`} alt="cover" />
-                    <div className="song-title-info">
-                       <span className="song-name" style={{ color: currentSong?.id === song.id ? '#1db954' : 'var(--essential-base)' }}>{song.title}</span>
+                    <img src={song.cover_image_path ? `http://127.0.0.1:8000/storage/${song.cover_image_path}` : "https://misc.scdn.co/liked-songs/liked-songs-300.png"} alt="cover" />
+                    <div className="song-title-info" style={{width: '100%'}}>
+                       {editingSongId === song.id ? (
+                         <input 
+                           type="text" 
+                           className="song-name-input"
+                           value={editingTitle}
+                           onChange={e => setEditingTitle(e.target.value)}
+                           onBlur={() => saveSongTitle(song.id)}
+                           onKeyDown={e => handleSongKeyDown(e, song.id)}
+                           autoFocus
+                           onClick={e => e.stopPropagation()}
+                           onDoubleClick={e => e.stopPropagation()}
+                         />
+                       ) : (
+                         <div className="song-name" style={{ color: currentSong?.id === song.id ? '#1db954' : 'var(--essential-base)' }}>{song.title}</div>
+                       )}
                     </div>
                  </div>
-                 <div className="col-album">{song.album || 'Unknown Album'}</div>
-                 <div className="col-date">Apr 9, 2019</div>
+                 <div className="col-date">{formatDate(song.created_at)}</div>
                  <div className="col-time">{song.duration || '2:21'}</div>
+                 <div className="col-edit">
+                    <button className="row-edit-btn" onClick={(e) => { e.stopPropagation(); startEditingSong(song); }} title="Edit Song">
+                       <FiEdit2 size={16} />
+                    </button>
+                 </div>
               </div>
            ))}
         </div>
@@ -316,7 +450,7 @@ export const MainContainer = ({ refreshCount, songs, onPlaySong, currentSong, is
                </button>
                <button className="save-btn" onClick={handleSaveEdit}>Save</button>
             </div>
-            <p className="edit-disclaimer">By proceeding, you agree to give Spotify access to the image you choose to upload. Please make sure you have the right to upload the image.</p>
+            <p className="edit-disclaimer">By proceeding, you agree to give Stainify access to the image you choose to upload. Please make sure you have the right to upload the image.</p>
           </div>
         </div>
       )}

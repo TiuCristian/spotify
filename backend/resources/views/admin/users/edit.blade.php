@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>User Profile - Spotify Admin</title>
+  <title>User Profile - Stainify Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ asset('admin-assets/assets/libs/fontawesome/css/all.min.css') }}">
   <style>
@@ -145,6 +145,28 @@
     select.form-control {
         appearance: none;
     }
+    .playing-equalizer {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 18px;
+    }
+    .playing-equalizer span {
+        display: block;
+        width: 4px;
+        background-color: #1db954;
+        animation: eq-bounce 0.6s infinite alternate;
+    }
+    .playing-equalizer span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .playing-equalizer span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes eq-bounce {
+        0% { height: 4px; }
+        100% { height: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -167,15 +189,6 @@
             <a onclick="showTab('socialTab', this)" class="sidebar-item"><i class="fas fa-users"></i> Social Connections</a>
         </div>
         <div class="sidebar-section">
-            <h3>Subscription</h3>
-            <a class="sidebar-item"><i class="fas fa-gem"></i> Available subscriptions</a>
-            <a class="sidebar-item"><i class="fas fa-cog"></i> Manage subscription</a>
-        </div>
-        <div class="sidebar-section">
-            <h3>Payment</h3>
-            <a class="sidebar-item"><i class="fas fa-history"></i> Payment history</a>
-        </div>
-        <div class="sidebar-section">
             <h3>Security and Privacy</h3>
             <a class="sidebar-item"><i class="fas fa-lock"></i> Notification settings</a>
             <a class="sidebar-item"><i class="fas fa-shield-alt"></i> Account privacy</a>
@@ -183,6 +196,23 @@
     </div>
 
     <div class="main-content" id="personalInfoTab">
+        <div id="current-song-widget" style="background: rgba(30,215,96,0.1); border: 1px solid #1ed760; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; align-items: center; gap: 15px; display: {{ ($user->current_song_id && $user->currentSong) ? 'flex' : 'none' }};">
+            <div style="width: 48px; height: 48px; background: #282828; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <img id="current-song-cover" src="{{ ($user->current_song_id && $user->currentSong && $user->currentSong->cover_image_path) ? asset('storage/' . $user->currentSong->cover_image_path) : '' }}" style="width: 100%; height: 100%; object-fit: cover; display: {{ ($user->current_song_id && $user->currentSong && $user->currentSong->cover_image_path) ? 'block' : 'none' }};" alt="cover">
+                <i id="current-song-icon" class="fas fa-music" style="color: #b3b3b3; display: {{ ($user->current_song_id && $user->currentSong && !$user->currentSong->cover_image_path) ? 'block' : 'none' }};"></i>
+            </div>
+            <div>
+                <div style="color: #1ed760; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    Currently Listening To <i class="fas fa-volume-up"></i>
+                </div>
+                <div id="current-song-title" style="color: #fff; font-weight: bold; font-size: 16px;">{{ $user->currentSong ? $user->currentSong->title : '' }}</div>
+                <div id="current-song-artist" style="color: #b3b3b3; font-size: 14px;">{{ $user->currentSong ? $user->currentSong->artist : '' }}</div>
+            </div>
+            <div style="margin-left: auto;">
+                <div class="playing-equalizer"><span></span><span></span><span></span></div>
+            </div>
+        </div>
+
         <h1>Edit personal info</h1>
         <p style="color: #b3b3b3; margin-bottom: 30px;">Manage details for user #{{ $user->id }}</p>
 
@@ -277,18 +307,18 @@
                 $isWorkPlaylist = strtolower($playlist->name) === 'work';
                 $displaySongs = $isWorkPlaylist ? \App\Models\Song::all() : $playlist->songs;
             @endphp
-            <div style="background: #282828; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h2 style="margin-top: 0; font-size: 20px;">{{ $playlist->name }} <span style="font-size: 14px; color: #b3b3b3; font-weight: normal;">({{ $displaySongs->count() }} songs)</span></h2>
-                <ul style="list-style: none; padding: 0; margin: 0;">
-                    @forelse($displaySongs as $song)
-                        <li style="padding: 10px 0; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-                            <span>{{ $song->title }} <small style="color: #b3b3b3;">by {{ $song->artist }}</small></span>
-                            <span style="color: #b3b3b3;">2:21</span>
-                        </li>
-                    @empty
-                        <li style="color: #b3b3b3; font-style: italic; border-top: 1px solid #333; padding-top: 10px;">No songs in this playlist.</li>
-                    @endforelse
-                </ul>
+            <div style="background: #282828; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="margin-top: 0; margin-bottom: 5px; font-size: 20px;">
+                        <a href="{{ route('admin.users.playlist', [$user->id, $playlist->id]) }}" style="color: #fff; text-decoration: none;">
+                            {{ $playlist->name }}
+                        </a>
+                    </h2>
+                    <span style="font-size: 14px; color: #b3b3b3;">{{ $displaySongs->count() }} songs</span>
+                </div>
+                <div>
+                    <a href="{{ route('admin.users.playlist', [$user->id, $playlist->id]) }}" style="background-color: #1db954; color: #000; padding: 8px 16px; border-radius: 500px; text-decoration: none; font-weight: bold; font-size: 14px;">View Songs</a>
+                </div>
             </div>
         @empty
             <div style="color: #b3b3b3; font-style: italic;">This user has not created any playlists yet.</div>
@@ -343,12 +373,10 @@
 
   <script>
     function showTab(tabId, element) {
-        document.getElementById('personalInfoTab').style.display = 'none';
-        document.getElementById('playlistsTab').style.display = 'none';
-        document.getElementById('socialTab').style.display = 'none';
+        document.querySelectorAll('.main-content').forEach(el => el.style.display = 'none');
         document.getElementById(tabId).style.display = 'block';
         
-        document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
         element.classList.add('active');
     }
 
@@ -360,9 +388,40 @@
         document.getElementById('deleteModal').style.display = 'none';
     }
 
-    function submitDeleteForm() {
+        function submitDeleteForm() {
         document.getElementById('deleteUserForm').submit();
     }
+
+    // Live Poll for Current Song
+    setInterval(async () => {
+        try {
+            const res = await fetch("{{ route('admin.users.current_song', $user->id) }}");
+            if (res.ok) {
+                const data = await res.json();
+                const widget = document.getElementById('current-song-widget');
+                if (data.is_playing) {
+                    widget.style.display = 'flex';
+                    document.getElementById('current-song-title').innerText = data.title;
+                    document.getElementById('current-song-artist').innerText = data.artist;
+                    
+                    const coverImg = document.getElementById('current-song-cover');
+                    const coverIcon = document.getElementById('current-song-icon');
+                    if (data.cover_url) {
+                        coverImg.src = data.cover_url;
+                        coverImg.style.display = 'block';
+                        coverIcon.style.display = 'none';
+                    } else {
+                        coverImg.style.display = 'none';
+                        coverIcon.style.display = 'block';
+                    }
+                } else {
+                    widget.style.display = 'none';
+                }
+            }
+        } catch (err) {
+            console.error("Failed to fetch current song", err);
+        }
+    }, 3000); // Poll every 3 seconds
   </script>
 
 </body>
