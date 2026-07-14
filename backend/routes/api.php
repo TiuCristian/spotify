@@ -29,7 +29,7 @@ Route::put('/user/settings', [UserController::class, 'updateSettings']);
 Route::get('/social', [SocialController::class, 'index']);
 Route::post('/social/follow', [SocialController::class, 'follow']);
 Route::post('/social/unfollow', [SocialController::class, 'unfollow']);
-Route::post('/social/status', [SocialController::class, 'updateStatus']);
+Route::post('/social/status', [SocialController::class, 'updateCurrentSong']);
 
 Route::get('/messages/{userId}', [MessageController::class, 'getMessages']);
 Route::post('/messages', [MessageController::class, 'sendMessage']);

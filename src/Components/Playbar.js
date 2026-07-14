@@ -138,6 +138,18 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
       audioRef.current.src = `http://127.0.0.1:8000/api/audio/${currentSong.audio_file_path}`;
       audioRef.current.play().catch(e => console.error("Play error:", e));
       setIsPlaying(true);
+      
+      const userStr = localStorage.getItem('spotify_user');
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          fetch('http://localhost:8000/api/social/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userObj.email, song_id: currentSong.id })
+          }).catch(err => console.error("Social status error", err));
+        } catch(e) {}
+      }
     }
   }, [currentSong, setIsPlaying]);
 
