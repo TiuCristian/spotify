@@ -5,6 +5,12 @@ import { BiLayer } from 'react-icons/bi';
 
 export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }) => {
   const audioRef = useRef(new Audio());
+  
+  // Ensure crossOrigin is set immediately before any src is assigned
+  if (!audioRef.current.crossOrigin) {
+    audioRef.current.crossOrigin = "anonymous";
+  }
+
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
@@ -12,21 +18,135 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
 
+  const audioCtxRef = useRef(null);
+  const filtersRef = useRef([]);
+  const monoGainRef = useRef(null);
+  const volumeGainRef = useRef(null);
+  const compressorRef = useRef(null);
+
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('spotifySettings');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const handleSettingsChange = (e) => setSettings(e.detail);
+    window.addEventListener('settingsChanged', handleSettingsChange);
+    return () => window.removeEventListener('settingsChanged', handleSettingsChange);
+  }, []);
+
+  useEffect(() => {
+    audioRef.current.crossOrigin = "anonymous";
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying && !audioCtxRef.current) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+        
+        const source = ctx.createMediaElementSource(audioRef.current);
+        
+        const frequencies = [60, 150, 400, 1000, 2400, 15000];
+        const filters = frequencies.map(freq => {
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'peaking';
+          filter.frequency.value = freq;
+          filter.Q.value = 1;
+          filter.gain.value = 0;
+          return filter;
+        });
+        filtersRef.current = filters;
+
+        const monoGain = ctx.createGain();
+        monoGainRef.current = monoGain;
+
+        const volumeGain = ctx.createGain();
+        volumeGainRef.current = volumeGain;
+
+        const compressor = ctx.createDynamicsCompressor();
+        compressorRef.current = compressor;
+
+        let prevNode = source;
+        filters.forEach(filter => {
+          prevNode.connect(filter);
+          prevNode = filter;
+        });
+        
+        prevNode.connect(monoGain);
+        monoGain.connect(volumeGain);
+        volumeGain.connect(compressor);
+        compressor.connect(ctx.destination);
+        
+        // Ensure it's not suspended
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+      } catch (e) {
+        console.error("Audio Context Init Error:", e);
+      }
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!audioCtxRef.current || !settings) return;
+    if (settings.equalizer && settings.eqBands) {
+      filtersRef.current.forEach((filter, idx) => {
+        filter.gain.setTargetAtTime(settings.eqBands[idx], audioCtxRef.current.currentTime, 0.1);
+      });
+    } else {
+      filtersRef.current.forEach((filter) => {
+        filter.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.1);
+      });
+    }
+
+    if (monoGainRef.current) {
+      if (settings.monoAudio) {
+        monoGainRef.current.channelCount = 1;
+        monoGainRef.current.channelCountMode = "explicit";
+      } else {
+        monoGainRef.current.channelCount = 2;
+        monoGainRef.current.channelCountMode = "max";
+      }
+    }
+
+    if (volumeGainRef.current) {
+      let v = 1.0;
+      if (settings.volumeLevel === 'Loud') v = 1.5;
+      else if (settings.volumeLevel === 'Quiet') v = 0.5;
+      volumeGainRef.current.gain.setTargetAtTime(v, audioCtxRef.current.currentTime, 0.1);
+    }
+
+    if (compressorRef.current) {
+      if (settings.normalizeVolume) {
+        compressorRef.current.threshold.setTargetAtTime(-24, audioCtxRef.current.currentTime, 0.1);
+        compressorRef.current.ratio.setTargetAtTime(12, audioCtxRef.current.currentTime, 0.1);
+      } else {
+        compressorRef.current.threshold.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.1);
+        compressorRef.current.ratio.setTargetAtTime(1, audioCtxRef.current.currentTime, 0.1);
+      }
+    }
+  }, [settings]);
+
   useEffect(() => {
     audioRef.current.volume = volume;
   }, [volume]);
 
   useEffect(() => {
     if (currentSong) {
-      audioRef.current.src = `http://127.0.0.1:8000/storage/${currentSong.audio_file_path}`;
-      audioRef.current.play();
+      audioRef.current.src = `http://127.0.0.1:8000/api/audio/${currentSong.audio_file_path}`;
+      audioRef.current.play().catch(e => console.error("Play error:", e));
       setIsPlaying(true);
     }
   }, [currentSong, setIsPlaying]);
 
   useEffect(() => {
     if (isPlaying) {
-      audioRef.current.play();
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+      audioRef.current.play().catch(e => console.error("Play error:", e));
     } else {
       audioRef.current.pause();
     }

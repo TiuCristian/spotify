@@ -4,6 +4,7 @@ import './TopBar.css';
 import { FiHome, FiSearch, FiBell, FiMessageCircle, FiUsers, FiUser, FiUpload, FiExternalLink, FiCheck } from 'react-icons/fi';
 import { BiLibrary } from 'react-icons/bi';
 import { useNavigate } from 'react-router-dom';
+import { SettingsModal } from './SettingsModal';
 
 export const TopBar = ({ onOpenUpload, user, onOpenChat }) => {
   const navigate = useNavigate();
@@ -267,60 +268,7 @@ export const TopBar = ({ onOpenUpload, user, onOpenChat }) => {
           )}
        </div>
 
-       {isSettingsOpen && (
-         <div style={{
-           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-           background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', 
-           alignItems: 'center', justifyContent: 'center'
-         }} onClick={() => setIsSettingsOpen(false)}>
-           <div style={{
-             background: '#282828', padding: '30px', borderRadius: '8px', 
-             width: '400px', display: 'flex', flexDirection: 'column', gap: '15px'
-           }} onClick={e => e.stopPropagation()}>
-             <h2 style={{marginTop: 0, color: '#fff'}}>Account Settings</h2>
-             <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-               <label style={{color: '#b3b3b3', fontSize: '14px', fontWeight: 'bold'}}>Name</label>
-               <input 
-                 type="text" 
-                 value={editName}
-                 onChange={e => setEditName(e.target.value)}
-                 style={{padding: '10px', borderRadius: '4px', border: 'none', background: '#3e3e3e', color: '#fff'}}
-               />
-             </div>
-             <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-               <label style={{color: '#b3b3b3', fontSize: '14px', fontWeight: 'bold'}}>New Password</label>
-               <input 
-                 type="password" 
-                 placeholder="Leave blank to keep current"
-                 value={editPassword}
-                 onChange={e => setEditPassword(e.target.value)}
-                 style={{padding: '10px', borderRadius: '4px', border: 'none', background: '#3e3e3e', color: '#fff'}}
-               />
-             </div>
-             <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px'}}>
-               <button onClick={() => setIsSettingsOpen(false)} style={{
-                 background: 'transparent', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold'
-               }}>Cancel</button>
-               <button onClick={async () => {
-                 try {
-                   const res = await fetch('http://localhost:8000/api/user/settings', {
-                     method: 'PUT',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ email: user.email, name: editName, password: editPassword })
-                   });
-                   if(res.ok) {
-                     const data = await res.json();
-                     localStorage.setItem('spotify_user', JSON.stringify({ name: data.user.name, email: data.user.email }));
-                     window.location.reload();
-                   }
-                 } catch(e) { console.error(e); }
-               }} style={{
-                 background: '#1db954', color: '#000', border: 'none', borderRadius: '500px', padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold'
-               }}>Save Profile</button>
-             </div>
-           </div>
-         </div>
-       )}
+       {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </div>
   );
 };

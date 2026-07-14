@@ -2,34 +2,45 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\SongController;
+use App\Http\Controllers\Api\SongController;
+use App\Http\Controllers\Api\PlaylistController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\SocialController;
+use App\Http\Controllers\Api\MessageController;
 
-Route::get('/user', function (Request $request) {
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+});
 
 Route::get('/songs', [SongController::class, 'index']);
 Route::post('/songs', [SongController::class, 'store']);
 Route::put('/songs/{id}', [SongController::class, 'update']);
+Route::delete('/songs/{id}', [SongController::class, 'destroy']);
 
-Route::post('/register', [\App\Http\Controllers\Api\AuthController::class, 'register']);
-Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
-Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
-Route::post('/ping', [\App\Http\Controllers\Api\AuthController::class, 'ping']);
-Route::put('/user/settings', [\App\Http\Controllers\Api\AuthController::class, 'updateSettings']);
+Route::get('/playlists', [PlaylistController::class, 'index']);
+Route::post('/playlists', [PlaylistController::class, 'store']);
+Route::put('/playlists/{id}', [PlaylistController::class, 'update']);
+Route::delete('/playlists/{id}', [PlaylistController::class, 'destroy']);
+Route::post('/playlists/{playlistId}/songs', [PlaylistController::class, 'addSong']);
+Route::delete('/playlists/{playlistId}/songs/{songId}', [PlaylistController::class, 'removeSong']);
 
-Route::get('/playlists', [\App\Http\Controllers\Api\PlaylistController::class, 'index']);
-Route::post('/playlists', [\App\Http\Controllers\Api\PlaylistController::class, 'store']);
-Route::put('/playlists/{id}', [\App\Http\Controllers\Api\PlaylistController::class, 'update']);
-Route::delete('/playlists/{id}', [\App\Http\Controllers\Api\PlaylistController::class, 'destroy']);
-Route::post('/playlists/{playlistId}/songs', [\App\Http\Controllers\Api\PlaylistController::class, 'addSong']);
+Route::put('/user/settings', [UserController::class, 'updateSettings']);
 
-Route::get('/social', [\App\Http\Controllers\Api\SocialController::class, 'getSocialData']);
-Route::post('/social/follow', [\App\Http\Controllers\Api\SocialController::class, 'sendRequest']);
-Route::post('/social/accept', [\App\Http\Controllers\Api\SocialController::class, 'acceptRequest']);
-Route::post('/social/decline', [\App\Http\Controllers\Api\SocialController::class, 'declineRequest']);
-Route::post('/social/current-song', [\App\Http\Controllers\Api\SocialController::class, 'updateCurrentSong']);
+Route::get('/social', [SocialController::class, 'index']);
+Route::post('/social/follow', [SocialController::class, 'follow']);
+Route::post('/social/unfollow', [SocialController::class, 'unfollow']);
+Route::post('/social/status', [SocialController::class, 'updateStatus']);
 
-Route::get('/chat/messages', [\App\Http\Controllers\Api\MessageController::class, 'index']);
-Route::post('/chat/messages', [\App\Http\Controllers\Api\MessageController::class, 'store']);
-Route::get('/chat/unread', [\App\Http\Controllers\Api\MessageController::class, 'unread']);
+Route::get('/messages/{userId}', [MessageController::class, 'getMessages']);
+Route::post('/messages', [MessageController::class, 'sendMessage']);
+Route::post('/messages/seen', [MessageController::class, 'markAsSeen']);
+
+Route::get('/audio/{path}', function ($path) {
+    $file = storage_path('app/public/' . $path);
+    if (!file_exists($file)) abort(404);
+    return response()->file($file, [
+        'Access-Control-Allow-Origin' => '*',
+        'Accept-Ranges' => 'bytes',
+        'Content-Type' => mime_content_type($file)
+    ]);
+})->where('path', '.*');
