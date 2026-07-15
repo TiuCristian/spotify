@@ -305,7 +305,7 @@
         @forelse($user->playlists as $playlist)
             @php
                 $isWorkPlaylist = strtolower($playlist->name) === 'work';
-                $displaySongs = $isWorkPlaylist ? \App\Models\Song::all() : $playlist->songs;
+                $songCount = $isWorkPlaylist ? \App\Models\Song::count() : $playlist->songs_count;
             @endphp
             <div style="background: #282828; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
@@ -314,7 +314,7 @@
                             {{ $playlist->name }}
                         </a>
                     </h2>
-                    <span style="font-size: 14px; color: #b3b3b3;">{{ $displaySongs->count() }} songs</span>
+                    <span style="font-size: 14px; color: #b3b3b3;">{{ $songCount }} songs</span>
                 </div>
                 <div>
                     <a href="{{ route('admin.users.playlist', [$user->id, $playlist->id]) }}" style="background-color: #1db954; color: #000; padding: 8px 16px; border-radius: 500px; text-decoration: none; font-weight: bold; font-size: 14px;">View Songs</a>
@@ -395,7 +395,7 @@
     // Live Poll for Current Song
     setInterval(async () => {
         try {
-            const res = await fetch("{{ route('admin.users.current_song', $user->id) }}");
+            const res = await fetch(`{{ route('admin.users.current_song', $user->id) }}?t=${new Date().getTime()}`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
                 const widget = document.getElementById('current-song-widget');
@@ -421,7 +421,7 @@
         } catch (err) {
             console.error("Failed to fetch current song", err);
         }
-    }, 3000); // Poll every 3 seconds
+    }, 1000); // Poll every 1 second
   </script>
 
 </body>

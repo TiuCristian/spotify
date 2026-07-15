@@ -4,12 +4,61 @@ import { FiPlayCircle, FiPauseCircle, FiSkipBack, FiSkipForward, FiRepeat, FiShu
 import { BiLayer } from 'react-icons/bi';
 
 export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }) => {
-  const audioRef = useRef(new Audio());
-  
-  // Ensure crossOrigin is set immediately before any src is assigned
-  if (!audioRef.current.crossOrigin) {
+  const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const filtersRef = useRef([]);
+  const monoGainRef = useRef(null);
+  const volumeGainRef = useRef(null);
+  const compressorRef = useRef(null);
+
+  if (!audioRef.current) {
+    audioRef.current = new Audio();
+    audioRef.current.preload = "auto";
     audioRef.current.crossOrigin = "anonymous";
+    
+    // Initialize Web Audio API graph immediately to avoid latency on first play
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      
+      const source = ctx.createMediaElementSource(audioRef.current);
+      
+      const frequencies = [60, 150, 400, 1000, 2400, 15000];
+      const filters = frequencies.map(freq => {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'peaking';
+        filter.frequency.value = freq;
+        filter.Q.value = 1;
+        filter.gain.value = 0;
+        return filter;
+      });
+      filtersRef.current = filters;
+
+      const monoGain = ctx.createGain();
+      monoGainRef.current = monoGain;
+
+      const volumeGain = ctx.createGain();
+      volumeGainRef.current = volumeGain;
+
+      const compressor = ctx.createDynamicsCompressor();
+      compressorRef.current = compressor;
+
+      let prevNode = source;
+      filters.forEach(filter => {
+        prevNode.connect(filter);
+        prevNode = filter;
+      });
+      
+      prevNode.connect(monoGain);
+      monoGain.connect(volumeGain);
+      volumeGain.connect(compressor);
+      compressor.connect(ctx.destination);
+    } catch (e) {
+      console.error("Audio Context Init Error:", e);
+    }
   }
+  const isDraggingRef = useRef(false);
 
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
@@ -17,12 +66,6 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
   const [volume, setVolume] = useState(0.7);
   const [isShuffle, setIsShuffle] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
-
-  const audioCtxRef = useRef(null);
-  const filtersRef = useRef([]);
-  const monoGainRef = useRef(null);
-  const volumeGainRef = useRef(null);
-  const compressorRef = useRef(null);
 
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('spotifySettings');
@@ -35,57 +78,16 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
     return () => window.removeEventListener('settingsChanged', handleSettingsChange);
   }, []);
 
-  useEffect(() => {
-    audioRef.current.crossOrigin = "anonymous";
-  }, []);
+  // Ensure AudioContext is resumed if suspended
+  const resumeAudioContext = () => {
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+  };
 
   useEffect(() => {
-    if (isPlaying && !audioCtxRef.current) {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-        
-        const source = ctx.createMediaElementSource(audioRef.current);
-        
-        const frequencies = [60, 150, 400, 1000, 2400, 15000];
-        const filters = frequencies.map(freq => {
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'peaking';
-          filter.frequency.value = freq;
-          filter.Q.value = 1;
-          filter.gain.value = 0;
-          return filter;
-        });
-        filtersRef.current = filters;
-
-        const monoGain = ctx.createGain();
-        monoGainRef.current = monoGain;
-
-        const volumeGain = ctx.createGain();
-        volumeGainRef.current = volumeGain;
-
-        const compressor = ctx.createDynamicsCompressor();
-        compressorRef.current = compressor;
-
-        let prevNode = source;
-        filters.forEach(filter => {
-          prevNode.connect(filter);
-          prevNode = filter;
-        });
-        
-        prevNode.connect(monoGain);
-        monoGain.connect(volumeGain);
-        volumeGain.connect(compressor);
-        compressor.connect(ctx.destination);
-        
-        // Ensure it's not suspended
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
-      } catch (e) {
-        console.error("Audio Context Init Error:", e);
-      }
+    if (isPlaying) {
+      resumeAudioContext();
     }
   }, [isPlaying]);
 
@@ -135,9 +137,18 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
 
   useEffect(() => {
     if (currentSong) {
-      audioRef.current.src = `http://127.0.0.1:8000/api/audio/${currentSong.audio_file_path}`;
-      audioRef.current.play().catch(e => console.error("Play error:", e));
-      setIsPlaying(true);
+      resumeAudioContext();
+      
+      // Fetch the audio file completely to avoid locking the single-threaded PHP server
+      fetch(`http://127.0.0.1:8000/api/audio/${currentSong.audio_file_path}`)
+        .then(response => response.blob())
+        .then(blob => {
+          const objectUrl = URL.createObjectURL(blob);
+          audioRef.current.src = objectUrl;
+          audioRef.current.play().catch(e => console.error("Play error:", e));
+          setIsPlaying(true);
+        })
+        .catch(e => console.error("Fetch audio error:", e));
       
       const userStr = localStorage.getItem('spotify_user');
       if (userStr) {
@@ -155,12 +166,14 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
 
   useEffect(() => {
     if (isPlaying) {
-      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume();
+      resumeAudioContext();
+      if (audioRef.current.paused) {
+        audioRef.current.play().catch(e => console.error("Play error:", e));
       }
-      audioRef.current.play().catch(e => console.error("Play error:", e));
     } else {
-      audioRef.current.pause();
+      if (!audioRef.current.paused) {
+        audioRef.current.pause();
+      }
     }
   }, [isPlaying]);
 
@@ -168,10 +181,12 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
     const audio = audioRef.current;
     
     const updateTime = () => {
-      const current = audio.currentTime;
-      const total = audio.duration || 0;
-      setProgress((current / total) * 100);
-      setCurrentTime(formatTime(current));
+      if (!isDraggingRef.current) {
+        const current = audio.currentTime;
+        const total = audio.duration || 0;
+        setProgress((current / total) * 100);
+        setCurrentTime(formatTime(current));
+      }
     };
 
     const updateDuration = () => {
@@ -199,6 +214,24 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
     };
   }, [setIsPlaying, isRepeat, isShuffle, onNext]);
 
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        // Optional nudge to ensure it plays if it got stuck
+        if (isPlaying && audioRef.current.paused) {
+          audioRef.current.play().catch(e => console.error(e));
+        }
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener('touchend', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('touchend', handleGlobalMouseUp);
+    };
+  }, [isPlaying]);
+
   const formatTime = (time) => {
     if (!time || isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
@@ -208,15 +241,39 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
 
   const togglePlay = () => {
     if (!currentSong) return;
+    
+    resumeAudioContext();
+    
+    // Execute synchronously to bypass React render delay
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(e => console.error("Play error:", e));
+    }
+    
     setIsPlaying(!isPlaying);
   };
 
-  const handleProgressClick = (e) => {
+  const handleProgressChange = (e) => {
     if (!currentSong) return;
-    const bar = e.currentTarget;
-    const clickX = e.clientX - bar.getBoundingClientRect().left;
-    const newProgress = (clickX / bar.offsetWidth) * 100;
-    audioRef.current.currentTime = (newProgress / 100) * audioRef.current.duration;
+    const newProgress = parseFloat(e.target.value);
+    setProgress(newProgress);
+    if (audioRef.current.duration) {
+      setCurrentTime(formatTime((newProgress / 100) * audioRef.current.duration));
+    }
+  };
+
+  const handleProgressDragEnd = (e) => {
+    if (!currentSong) return;
+    isDraggingRef.current = false;
+    const newProgress = parseFloat(e.target.value);
+    if (audioRef.current.duration) {
+      audioRef.current.currentTime = (newProgress / 100) * audioRef.current.duration;
+      // Explicitly call play to resume if the browser stalled during the seek
+      if (isPlaying) {
+        audioRef.current.play().catch(e => console.error("Play error:", e));
+      }
+    }
   };
 
   const [hoverTime, setHoverTime] = useState(null);
@@ -238,11 +295,8 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
     setHoverTime(null);
   };
 
-  const handleVolumeClick = (e) => {
-    const bar = e.currentTarget;
-    const clickX = e.clientX - bar.getBoundingClientRect().left;
-    const newVolume = Math.max(0, Math.min(1, clickX / bar.offsetWidth));
-    setVolume(newVolume);
+  const handleVolumeChange = (e) => {
+    setVolume(parseFloat(e.target.value));
   };
 
   return (
@@ -299,10 +353,22 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
           <span className="time">{currentTime}</span>
           <div 
             className="progress-bar" 
-            onClick={handleProgressClick}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
           >
+            <input 
+              type="range" 
+              min="0" 
+              max="100" 
+              step="0.1" 
+              value={progress || 0}
+              onMouseDown={() => { isDraggingRef.current = true; }}
+              onTouchStart={() => { isDraggingRef.current = true; }}
+              onChange={handleProgressChange}
+              onMouseUp={handleProgressDragEnd}
+              onTouchEnd={handleProgressDragEnd}
+              className="range-slider"
+            />
             {hoverTime && (
               <div className="hover-tooltip" style={{ left: hoverPosition }}>
                 {hoverTime}
@@ -317,14 +383,20 @@ export const Playbar = ({ currentSong, isPlaying, setIsPlaying, onNext, onPrev }
       </div>
 
       <div className="extra-controls">
-         <button className="control-btn"><FiMic /></button>
-         <button className="control-btn"><BiLayer /></button>
-         <button className="control-btn"><FiMonitor /></button>
          <div className="volume-control">
             <button className="control-btn" onClick={() => setVolume(volume === 0 ? 0.7 : 0)}>
                <FiVolume2 />
             </button>
-            <div className="progress-bar volume-bar" onClick={handleVolumeClick}>
+            <div className="progress-bar volume-bar">
+               <input 
+                 type="range" 
+                 min="0" 
+                 max="1" 
+                 step="0.01" 
+                 value={volume} 
+                 onChange={handleVolumeChange} 
+                 className="range-slider"
+               />
                <div className="progress-bar-fill" style={{width: `${volume * 100}%`}}>
                   <div className="progress-bar-thumb"></div>
                </div>

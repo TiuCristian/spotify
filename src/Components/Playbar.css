@@ -185,6 +185,20 @@
   opacity: 1;
 }
 
+.range-slider {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 5;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 .hover-tooltip {
   position: absolute;
   top: -30px;

@@ -15,7 +15,11 @@ class AdminUserController extends Controller
 
     public function edit(User $user)
     {
-        $user->load('playlists.songs');
+        // Prevent loading every single song into memory which causes massive slowdowns
+        $user->load(['playlists' => function($query) {
+            $query->withCount('songs');
+        }, 'following', 'followers']);
+        
         return view('admin.users.edit', compact('user'));
     }
 

@@ -9,6 +9,12 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
   const [playlistToDelete, setPlaylistToDelete] = useState(null);
   const [isResizing, setIsResizing] = useState(false);
 
+  // New states for search and sort
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState('Recents');
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+
   // Compute unique artists from songs
   const artists = songs ? [...new Set(songs.map(s => s.artist))] : [];
 
@@ -16,6 +22,7 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
     const handleClickOutside = () => {
       setIsCreateMenuOpen(false);
       setContextMenu(null);
+      setIsSortDropdownOpen(false);
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
@@ -44,6 +51,33 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
     setIsResizing(false);
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+  };
+
+  const getFilteredAndSortedPlaylists = () => {
+    let filtered = playlists || [];
+    if (searchQuery) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return filtered.sort((a, b) => {
+      if (sortOption === 'Alphabetical') {
+        return a.name.localeCompare(b.name);
+      }
+      // 'Recents' sorting (fallback to id if no created_at exists, assuming higher ID is newer)
+      return b.id - a.id; 
+    });
+  };
+
+  const getFilteredAndSortedArtists = () => {
+    let filtered = artists || [];
+    if (searchQuery) {
+      filtered = filtered.filter(a => a.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return filtered.sort((a, b) => {
+      if (sortOption === 'Alphabetical') {
+        return a.localeCompare(b);
+      }
+      return 0; // No real 'Recents' for extracted artists
+    });
   };
 
   return (
@@ -128,12 +162,44 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
       </div>
       
       <div className="library-search-row">
-         <button className="icon-btn"><FiSearch /></button>
-         <span className="sort-dropdown">Recents ≡</span>
+         <div className={`search-container ${isSearchExpanded ? 'expanded' : ''}`}>
+           <button className="icon-btn" onClick={() => setIsSearchExpanded(!isSearchExpanded)}>
+             <FiSearch />
+           </button>
+           {isSearchExpanded && (
+             <input 
+               type="text" 
+               className="library-search-input" 
+               placeholder="Search in Your Library" 
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               autoFocus
+             />
+           )}
+         </div>
+         <div style={{position: 'relative'}}>
+           <span className="sort-dropdown" onClick={(e) => { e.stopPropagation(); setIsSortDropdownOpen(!isSortDropdownOpen); }} style={{cursor: 'pointer'}}>
+             {sortOption} ≡
+           </span>
+           {isSortDropdownOpen && (
+             <div className="create-dropdown-menu" style={{top: '100%', right: 0, left: 'auto', minWidth: '150px'}} onClick={e => e.stopPropagation()}>
+                <button className="dropdown-item" onClick={() => { setSortOption('Recents'); setIsSortDropdownOpen(false); }}>
+                   <div className="dropdown-text">
+                     <strong style={{color: sortOption === 'Recents' ? '#1db954' : '#fff'}}>Recents</strong>
+                   </div>
+                </button>
+                <button className="dropdown-item" onClick={() => { setSortOption('Alphabetical'); setIsSortDropdownOpen(false); }}>
+                   <div className="dropdown-text">
+                     <strong style={{color: sortOption === 'Alphabetical' ? '#1db954' : '#fff'}}>Alphabetical</strong>
+                   </div>
+                </button>
+             </div>
+           )}
+         </div>
       </div>
 
       <div className="library-scroll-area">
-         {activeFilter === 'Playlists' && playlists && playlists.map((playlist) => (
+         {activeFilter === 'Playlists' && getFilteredAndSortedPlaylists().map((playlist) => (
             <div 
               className="library-item" 
               key={playlist.id}
@@ -149,11 +215,11 @@ export const LeftSidebar = ({ playlists, songs, activeFilter, setActiveFilter, o
                </div>
                <div className="library-item-info">
                   <div className="library-item-title" style={{color: playlist.name === 'Work' ? '#1db954' : 'var(--essential-base)'}}>{playlist.name}</div>
-                  <div className="library-item-subtitle">{playlist.type} • {playlist.creator}</div>
+                  <div className="library-item-subtitle">{playlist.type || 'Playlist'} • {playlist.creator || 'User'}</div>
                </div>
             </div>
          ))}
-         {activeFilter === 'Artists' && artists.map((artist, idx) => (
+         {activeFilter === 'Artists' && getFilteredAndSortedArtists().map((artist, idx) => (
             <div 
               className="library-item" 
               key={idx}
